@@ -1,0 +1,86 @@
+# === Project-specific ===
+
+# Data & results
+data/
+data_processed/
+simulation/
+train/
+train_backup/
+test/
+outputs/
+results/
+deleted/
+
+# Model weights & checkpoints
+*.pt
+*.pth
+
+# Generated / large files
+*.npy
+*.npz
+*.zip
+*.mp4
+
+# Images (generated plots, etc.)
+*.png
+*.jpg
+*.pdf
+
+# Misc project files
+*.csv
+*.xlsx
+*.json
+*.gv
+*.txt
+!LMS_Track_0.25.txt
+!LMS_Track.txt
+
+# Acados generated C solvers & build artifacts
+env/mpc/acados_generated*/
+env/mpc/c_generated_code/
+env/mpc/c4/
+env/mpc/d4/
+env/mpc/acados_ocp.json
+
+# === Python ===
+
+__pycache__/
+*/__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.C
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+
+# === IDE / Editor ===
+.vscode/
+.idea/
+
+# === Test / Coverage ===
+.pytest_cache/
+.coverage
+htmlcov/
+
+# === Jupyter ===
+.ipynb_checkpoints/
+
+*.log
+.env
+*.swp
+.DS_Store
+
+# === Backup & temporary files ===
+*~
+*.bak
+*.backup
+*.tmp
