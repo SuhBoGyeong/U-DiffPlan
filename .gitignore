@@ -39,6 +39,8 @@ deleted/
 env/mpc/acados_generated*/
 env/mpc/c_generated_code/
 env/mpc/c4/
+env/mpc/c4_to/
+env/mpc/c4_to_dec/
 env/mpc/d4/
 env/mpc/acados_ocp.json
 

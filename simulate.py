@@ -2,15 +2,27 @@
 import time
 import numpy as np
 from env import Racing, Config, Config_TV
+from env.mpc.mpc_timeoptimal import MPC_TimeOptimal
 import argparse
 import os
 from datetime import datetime
+
+
+class RacingTimeOptimal(Racing):
+    """ MPC_TimeOptimal """
+
+    def __init__(self, args, config, config_tv, render_mode=None, exp_name=None):
+        super().__init__(args=args, config=config, config_tv=config_tv,
+                         render_mode=render_mode, exp_name=exp_name)
+        self.mpc = MPC_TimeOptimal(self.model, self.track, config)
+        print('[RacingTimeOptimal] EV MPC → MPC_TimeOptimal')
 
 def initialize_configs(args=None):
     cfg = Config()
     cfg_tv = Config_TV()
 
-    cfg.acados.export_dir = 'c4'
+    cfg.acados.export_dir = 'c4_to' if (args is not None and args.mpc_mode == 'timeoptimal') else 'c4'
+    cfg.acados.export_dir_dec = 'c4_to_dec' if (args is not None and args.mpc_mode == 'timeoptimal') else cfg.acados.export_dir_dec
     cfg_tv.acados.export_dir = 'd4'
 
     # Set vx_max based on leader/follower assignment
@@ -65,6 +77,9 @@ def get_args():
     parser.add_argument('--exp', '-exp', type=str, default=None)
     parser.add_argument('--data_gen_mode', '-data_gen', type=str, default='n') # data generation mode
     parser.add_argument('--ev_leader', '-ev_leader', type=str, default='y', help='Set EV as leader if y, else TV as leader')
+    parser.add_argument('--mpc_mode', '-mpc_mode', type=str, default='strategy',
+                        choices=['strategy', 'timeoptimal'],
+                        help='strategy:  multi-mode MPCC (default) | timeoptimal: time-optimal MPC')
     return parser.parse_args()
 
 def main():
@@ -77,7 +92,10 @@ def main():
     exp_name = args.exp if args.exp is not None else datetime.now().strftime("%Y%m%d_%H%M%S") 
 
     # Env initialization
-    env = Racing(args = args, config = config, config_tv=config_tv, render_mode="rgb_array", exp_name=exp_name)
+    if args.mpc_mode == 'timeoptimal':
+        env = RacingTimeOptimal(args=args, config=config, config_tv=config_tv, render_mode="rgb_array", exp_name=exp_name)
+    else:
+        env = Racing(args=args, config=config, config_tv=config_tv, render_mode="rgb_array", exp_name=exp_name)
 
     # Simulation variables
     tsum = 0.0
