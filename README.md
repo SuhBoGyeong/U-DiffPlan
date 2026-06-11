@@ -175,14 +175,10 @@ Use `--mpc_mode` to select the EV controller:
 # Strategy MPC (default) — multi-mode MPCC with following/overtaking/driving/blocking
 python simulate.py --mpc_mode strategy --ev_leader y
 
-# Time-Optimal MPC — maximises longitudinal velocity instead of tracking thetaref
+# Time-Optimal MPC — maximises track progress rate (dtheta) instead of tracking thetaref
 python simulate.py --mpc_mode timeoptimal --ev_leader y
 python simulate.py --mpc_mode timeoptimal --ev_leader n
 ```
-
-**MPC mode options:**
-- `--mpc_mode strategy` (default): Original uncertainty-aware MPCC. Progress term is `qtheta * (thetaref - theta)²`.
-- `--mpc_mode timeoptimal`: Time-optimal variant. Progress term is replaced with `-vx` (velocity maximisation) while all other costs (following, overtaking, driving, blocking, uncertainty constraints) remain identical.
 
 ---
 

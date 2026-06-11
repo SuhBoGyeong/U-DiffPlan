@@ -1,10 +1,18 @@
 """ACADOS OCP setup for Time-Optimal MPC.
 
-  MPCC: qtheta * (thetaref - theta)^2  
-  TOMPC: -qvx * vx                        
+Identical to acados_ocp_pp.py except the base cost progress term:
+  original : qtheta * (thetaref - theta)^2   (reference tracking)
+  replaced : -QDTHETA_TO * dtheta             (maximise track progress rate)
 
-following_cost, blocking_cost, overtaking_cost, driving_cost 
-uncertainty-aware constraints are all identical with MPCC version
+where dtheta = (vx*cos(epsi) - vy*sin(epsi)) / (1 - kappa*ec)
+is the rate of advancement along the track centerline.
+
+Note: maximising dtheta is a practical approximation of the true time-optimal
+objective (min sum 1/dtheta), which avoids numerical singularities near dtheta=0
+while preserving the lap-time minimisation intent.
+
+All other costs (following, overtaking, driving, blocking) and
+uncertainty-aware obstacle constraints are identical to acados_ocp_pp.
 """
 
 import casadi as ca
@@ -30,14 +38,14 @@ from .acados_ocp_common import (
 from acados_template import AcadosOcp
 
 
-# acados_ocp_pp.py와 동일한 상수
+# Same constants as acados_ocp_pp.py
 UNCERTAINTY_WEIGHT        = 0.9
 UNCERTAINTY_WEIGHT_LEADER = 0.1
 SAFE_MARGIN_FOLLOWING     = 0.6
 SAFE_MARGIN_LEADING       = 0.1
 
-# time-optimal용 속도 최대화 가중치
-QVX_TO = 1.0
+# Weight for track progress rate maximisation (time-optimal term)
+QDTHETA_TO = 0.3
 
 
 def acados_ocp_timeoptimal(vehicle_model, track, config):
@@ -109,9 +117,13 @@ def acados_ocp_timeoptimal(vehicle_model, track, config):
     # Curvature-based weight scaling  
     rdelta, rddelta, romega = apply_curvature_scaling(rdelta, rddelta, romega, kapparef, theta)
 
-    # ── base cost: qtheta*(thetaref-theta)^2 → -QVX_TO*vx ──────────────────
+    # dtheta: rate of progress along the track centerline
+    kappa = kapparef(ca.fmod(theta, theta_max))
+    dtheta = (vx * ca.cos(epsi) - vy * ca.sin(epsi)) / (1 - kappa * ec)
+
+    # Replace qtheta*(thetaref-theta)^2 with -QDTHETA_TO*dtheta (time-optimal)
     base_cost = (
-        - QVX_TO * vx +             
+        - QDTHETA_TO * dtheta +
         qec      * ec ** 2 +
         config.mpc.rD    * D ** 2 +
         rdelta   * delta ** 2 +
@@ -120,7 +132,7 @@ def acados_ocp_timeoptimal(vehicle_model, track, config):
         romega   * omega ** 2
     )
     base_cost_terminal = (
-        - QVX_TO * vx +
+        - QDTHETA_TO * dtheta +
         qec      * ec ** 2 +
         config.mpc.rD    * D ** 2 +
         rdelta   * delta ** 2 +
