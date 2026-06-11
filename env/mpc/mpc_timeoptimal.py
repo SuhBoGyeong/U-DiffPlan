@@ -80,6 +80,12 @@ class MPC_TimeOptimal:
     def _compute_following_trajectory(self, theta0, ey0, obstacle_trajectories, epsilon=0.0):
         interpol_theta = hstack([theta0, obstacle_trajectories[:, 8]])
         interpol_ec    = hstack([ey0,    obstacle_trajectories[:, 9]])
+        # Remove duplicate theta values to prevent division by zero in interp1d
+        _, unique_idx  = np.unique(interpol_theta, return_index=True)
+        interpol_theta = interpol_theta[unique_idx]
+        interpol_ec    = interpol_ec[unique_idx]
+        if len(interpol_theta) < 2:
+            return c_[obstacle_trajectories[:, 8], obstacle_trajectories[:, 9]]
         f_interpol     = interpolate.interp1d(interpol_theta, interpol_ec, kind='linear')
 
         dist_s   = abs(obstacle_trajectories[0][8] - theta0)

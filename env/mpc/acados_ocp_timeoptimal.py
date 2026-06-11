@@ -45,7 +45,8 @@ SAFE_MARGIN_FOLLOWING     = 0.6
 SAFE_MARGIN_LEADING       = 0.1
 
 # Weight for track progress rate maximisation (time-optimal term)
-QDTHETA_TO = 0.3
+# dtheta scale ~0-30 [1/s]; tune so that -QDTHETA_TO*dtheta ~ O(0.1) to match other cost terms
+QDTHETA_TO = 0.005
 
 
 def acados_ocp_timeoptimal(vehicle_model, track, config):
@@ -118,8 +119,10 @@ def acados_ocp_timeoptimal(vehicle_model, track, config):
     rdelta, rddelta, romega = apply_curvature_scaling(rdelta, rddelta, romega, kapparef, theta)
 
     # dtheta: rate of progress along the track centerline
+    # Clamp denominator away from zero to avoid singularity at high curvature + large lateral error
     kappa = kapparef(ca.fmod(theta, theta_max))
-    dtheta = (vx * ca.cos(epsi) - vy * ca.sin(epsi)) / (1 - kappa * ec)
+    denom = ca.fmax(1 - kappa * ec, 1e-3)
+    dtheta = (vx * ca.cos(epsi) - vy * ca.sin(epsi)) / denom
 
     # Replace qtheta*(thetaref-theta)^2 with -QDTHETA_TO*dtheta (time-optimal)
     base_cost = (
@@ -142,7 +145,7 @@ def acados_ocp_timeoptimal(vehicle_model, track, config):
     ocp.model.cost_expr_ext_cost   = base_cost
     ocp.model.cost_expr_ext_cost_e = base_cost_terminal
 
-    # ── mode-dependent obstacle cost  ──
+    # ── mode-dependent obstacle cost (identical to acados_ocp_pp) ──
     for obs in obstacles:
         thetaecobs = obs[3:]
         XYobs      = obs[:2]
@@ -174,6 +177,7 @@ def acados_ocp_timeoptimal(vehicle_model, track, config):
 
 def _compute_obstacle_cost(XY, XYobs, thetaecobs, thetaref, theta, vx, vy,
                            vehicle_model, driving_mode):
+    """Identical to acados_ocp_pp._compute_obstacle_cost."""
     qvx             = 0.03
     qvx_overtaking  = 0.04
     qfollow         = 1
